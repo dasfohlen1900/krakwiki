@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<title>Willkommen im Wiki</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 40px;
+}
+
+.box {
+  max-width: 800px;
+  margin: auto;
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+.lang {
+  display: none;
+}
+.lang.active {
+  display: block;
+}
+
+.langswitch {
+  text-align: right;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  background: white;
+}
+button:hover {
+  background: #eee;
+}
+
+nav a {
+  margin-right: 12px;
+  text-decoration: none;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+
+  <!-- Sprachwechsel -->
+  <div class="langswitch">
+    <button onclick="setLang('de')">DE</button>
+    <button onclick="setLang('lu')">LÜ</button>
+  </div>
+
+  <!-- Deutsch -->
+  <div class="lang" data-lang="de">
+    <h1>Willkommen im Wiki</h1>
+    <p>
+      Dieses Wiki sammelt Wissen, Artikel und Projekte.
+    </p>
+
+    <nav>
+      <a href="/wiki/artikel.html" data-keep-lang>Artikel</a>
+      <a href="/wiki/suche.html" data-keep-lang>Suche</a>
+    </nav>
+  </div>
+
+  <!-- LÜ -->
+  <div class="lang" data-lang="lu">
+    <h1>Villkôma tül Wiki</h1>
+    <p>
+      Tül wiki kolekta savja, artikla unt projêta.
+    </p>
+
+    <nav>
+      <a href="/wiki/artikel.html" data-keep-lang>Artikla</a>
+      <a href="/wiki/suche.html" data-keep-lang>Ćerća</a>
+    </nav>
+  </div>
+
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const lang = (params.get("lang") || "de").toLowerCase();
+
+// anzeigen
+document.querySelectorAll(".lang").forEach(div => {
+  div.classList.toggle("active", div.dataset.lang === lang);
+});
+
+// Links Sprache behalten
+document.querySelectorAll("a[data-keep-lang]").forEach(link => {
+  const url = new URL(link.href, location.origin);
+  url.searchParams.set("lang", lang);
+  link.href = url.toString();
+});
+
+function setLang(l) {
+  const url = new URL(window.location);
+  url.searchParams.set("lang", l);
+  window.location = url.toString();
+}
+</script>
+
+</body>
+</html>
