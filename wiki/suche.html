@@ -3,41 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <title>KrakWiki24 – Suche</title>
-
 <style>
-/* Fonts */
-h1, h2 { font-family: "Aeropus Serif", "Times New Roman", serif; }
-body, p, li, a, input { font-family: "Aeropus Sans", system-ui, sans-serif; }
-
-/* Layout */
-body { margin: 0; background: #f8f9fa; }
-.topbar {
-  display: flex; align-items: center; gap: 16px;
-  padding: 10px 20px; border-bottom: 1px solid #ccc; background: white;
-}
-.logo a { font-size: 22px; font-weight: 700; text-decoration: none; color: black; }
-.searchbox { flex: 1; }
-.searchbox input {
-  max-width: 460px; width: 100%; padding: 7px 10px; border: 1px solid #aaa; border-radius: 4px;
-}
-
-/* Main */
-.main { max-width: 800px; margin: 24px auto; padding: 0 16px; }
-.results { list-style: none; padding-left: 0; }
-.results li { padding: 6px 0; }
-.results a { text-decoration: none; color: #0066cc; }
-.results a:hover { text-decoration: underline; }
-
-.footer { text-align: center; padding: 20px; color: #666; }
+h1,h2{font-family:"Aeropus Serif","Times New Roman",serif;}
+body,p,li,a,input,span{font-family:"Aeropus Sans",system-ui,sans-serif;}
+body{margin:0;background:#f8f9fa;}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid #ccc;background:white;}
+.logo a{font-size:22px;font-weight:700;text-decoration:none;color:black;}
+.searchbox{flex:1;}
+.searchbox input{max-width:460px;width:100%;padding:7px 10px;border:1px solid #aaa;border-radius:4px;}
+.main{max-width:800px;margin:24px auto;padding:0 16px;}
+.results{list-style:none;padding-left:0;}
+.results li{padding:10px 0;border-bottom:1px solid #ddd;}
+.results li:last-child{border-bottom:none;}
+.results a{text-decoration:none;color:#0066cc;font-weight:600;}
+.results a:hover{text-decoration:underline;}
+.snippet{display:block;color:#444;font-size:0.95em;margin-top:2px;}
+.footer{text-align:center;padding:20px;color:#666;}
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="logo">
-    <a href="/wiki/startseite/index.html">KrakWiki24</a>
-  </div>
-
+  <div class="logo"><a href="/wiki/startseite/index.html">KrakWiki24</a></div>
   <form class="searchbox" onsubmit="return false;">
     <input type="search" id="searchInput" placeholder="Suche im Wiki">
   </form>
@@ -48,32 +35,80 @@ body { margin: 0; background: #f8f9fa; }
   <ul id="results" class="results"></ul>
 </main>
 
-<div class="footer">
-  © 2026 KrakWiki24
-</div>
+<div class="footer">© 2026 KrakWiki24</div>
 
 <script>
-// Statische Artikelliste
-const articles = [
-  { title: "Kraken", file: "Kraken.html" },
-  { title: "Tastatur", file: "Tastatur.html" },
-  // später weitere Artikel hier hinzufügen
-];
+// === GitHub-Repo-Konfiguration ===
+const githubUser = "dasfohlen1900";      // z.B. "dasfohlen1900"
+const githubRepo = "krakwiki";        // z.B. "dasfohlen1900.github.io"
+const wikiPath = "wiki";                  // Ordner mit Artikeln
 
-const input = document.getElementById("searchInput");
 const results = document.getElementById("results");
+const input = document.getElementById("searchInput");
+
+// Hilfsfunktion: Inhalte eines Verzeichnisses auf GitHub holen
+async function fetchGitHubDir(path="") {
+  const url = `https://api.github.com/repos/${githubUser}/${githubRepo}/contents/${path}`;
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(res.status);
+    return await res.json();
+  } catch(err) { console.error("GitHub API Fehler:", err); return []; }
+}
+
+// Hilfsfunktion: HTML-Datei laden und Vorschau extrahieren
+async function fetchSnippet(filePath) {
+  try {
+    const res = await fetch(`https://${githubUser}.github.io/${filePath}`);
+    const html = await res.text();
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const p = div.querySelector("main p") || div.querySelector("p");
+    if(!p) return "";
+    let text = p.textContent.trim();
+    return text.length>200 ? text.slice(0,200)+"..." : text;
+  } catch(err) {
+    console.error("Fehler beim Laden:", filePath, err);
+    return "";
+  }
+}
+
+// GitHub durchsuchen (rekursiv)
+async function listAllArticles(path=wikiPath) {
+  const items = await fetchGitHubDir(path);
+  let articles = [];
+  for(const item of items){
+    if(item.type==="file" && item.name.endsWith(".html")) articles.push(item.path);
+    if(item.type==="dir") articles = articles.concat(await listAllArticles(item.path));
+  }
+  return articles;
+}
 
 // Live-Suche
-input.addEventListener("input", () => {
-  const q = input.value.toLowerCase();
-  const matches = articles.filter(a => a.title.toLowerCase().includes(q));
-  results.innerHTML = matches.length
-    ? matches.map(a => `<li><a href="/wiki/${a.file}">${a.title}</a></li>`).join("")
-    : "<li>Keine Treffer</li>";
-});
+let allArticles = [];
+async function initArticles() {
+  allArticles = await listAllArticles();
+}
+initArticles();
 
-// Optional: Suchfeld beim Laden fokussieren
-input.focus();
+input.addEventListener("input", async () => {
+  const q = input.value.toLowerCase();
+  if(allArticles.length===0){ results.innerHTML="<li>Lade Artikel...</li>"; return; }
+
+  // Filter nach Titel
+  const filtered = allArticles.filter(f => f.toLowerCase().includes(q));
+
+  // Vorschau laden
+  const htmlSnippets = await Promise.all(
+    filtered.map(async f => {
+      const title = f.split("/").pop().replace(".html","");
+      const snippet = await fetchSnippet(f);
+      return `<li><a href="/${f}">${title}</a><span class="snippet">${snippet}</span></li>`;
+    })
+  );
+
+  results.innerHTML = htmlSnippets.length ? htmlSnippets.join("") : "<li>Keine Treffer</li>";
+});
 </script>
 
 </body>
