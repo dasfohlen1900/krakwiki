@@ -1,0 +1,11 @@
+{
+  "name": "krakwiki24",
+  "version": "1.0.0",
+  "scripts": {
+    "generate-index": "node generateSearchIndex.js",
+    "build": "npm run generate-index && echo 'Build abgeschlossen'"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12"
+  }
+}
