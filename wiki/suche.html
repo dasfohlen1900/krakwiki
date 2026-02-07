@@ -4,25 +4,21 @@
 <meta charset="UTF-8">
 <title>KrakWiki24 – Suche</title>
 <style>
-/* Fonts */
-h1,h2 { font-family: "Aeropus Serif","Times New Roman",serif; }
-body,p,li,a,input,span { font-family: "Aeropus Sans",system-ui,sans-serif; }
-
-body { margin:0; background:#f8f9fa; }
-.topbar { display:flex; align-items:center; gap:16px; padding:10px 20px; border-bottom:1px solid #ccc; background:white; }
-.logo a { font-size:22px; font-weight:700; text-decoration:none; color:black; }
-.searchbox { flex:1; }
-.searchbox input { max-width:460px; width:100%; padding:7px 10px; border:1px solid #aaa; border-radius:4px; }
-
-.main { max-width:800px; margin:24px auto; padding:0 16px; }
-.results { list-style:none; padding-left:0; }
-.results li { padding:10px 0; border-bottom:1px solid #ddd; }
-.results li:last-child { border-bottom:none; }
-.results a { text-decoration:none; color:#0066cc; font-weight:600; }
-.results a:hover { text-decoration:underline; }
-.snippet { display:block; color:#444; font-size:0.95em; margin-top:2px; }
-
-.footer { text-align:center; padding:20px; color:#666; }
+h1,h2{font-family:"Aeropus Serif","Times New Roman",serif;}
+body,p,li,a,input,span{font-family:"Aeropus Sans",system-ui,sans-serif;}
+body{margin:0;background:#f8f9fa;}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid #ccc;background:white;}
+.logo a{font-size:22px;font-weight:700;text-decoration:none;color:black;}
+.searchbox{flex:1;}
+.searchbox input{max-width:460px;width:100%;padding:7px 10px;border:1px solid #aaa;border-radius:4px;}
+.main{max-width:800px;margin:24px auto;padding:0 16px;}
+.results{list-style:none;padding-left:0;}
+.results li{padding:10px 0;border-bottom:1px solid #ddd;}
+.results li:last-child{border-bottom:none;}
+.results a{text-decoration:none;color:#0066cc;font-weight:600;}
+.results a:hover{text-decoration:underline;}
+.snippet{display:block;color:#444;font-size:0.95em;margin-top:2px;}
+.footer{text-align:center;padding:20px;color:#666;}
 </style>
 </head>
 <body>
@@ -42,35 +38,76 @@ body { margin:0; background:#f8f9fa; }
 <div class="footer">© 2026 KrakWiki24</div>
 
 <script>
+// === GitHub-Repo-Konfiguration ===
+const githubUser = "dasfohlen1900";      // z.B. "dasfohlen1900"
+const githubRepo = "krakwiki";        // z.B. "dasfohlen1900.github.io"
+const wikiPath = "wiki";                  // Ordner mit Artikeln
+
 const results = document.getElementById("results");
 const input = document.getElementById("searchInput");
 
-let allArticles = [];
-
-// JSON laden
-async function initArticles() {
+// Hilfsfunktion: Inhalte eines Verzeichnisses auf GitHub holen
+async function fetchGitHubDir(path="") {
+  const url = `https://api.github.com/repos/${githubUser}/${githubRepo}/contents/${path}`;
   try {
-    const res = await fetch("/wiki/index.json");
-    allArticles = await res.json();
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(res.status);
+    return await res.json();
+  } catch(err) { console.error("GitHub API Fehler:", err); return []; }
+}
+
+// Hilfsfunktion: HTML-Datei laden und Vorschau extrahieren
+async function fetchSnippet(filePath) {
+  try {
+    const res = await fetch(`https://krakwiki24.vercel.app/${filePath}`);
+    const html = await res.text();
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const p = div.querySelector("main p") || div.querySelector("p");
+    if(!p) return "";
+    let text = p.textContent.trim();
+    return text.length>200 ? text.slice(0,200)+"..." : text;
   } catch(err) {
-    console.error("Fehler beim Laden von index.json", err);
-    results.innerHTML = "<li>Fehler beim Laden der Artikel.</li>";
+    console.error("Fehler beim Laden:", filePath, err);
+    return "";
   }
+}
+
+// GitHub durchsuchen (rekursiv)
+async function listAllArticles(path=wikiPath) {
+  const items = await fetchGitHubDir(path);
+  let articles = [];
+  for(const item of items){
+    if(item.type==="file" && item.name.endsWith(".html")) articles.push(item.path);
+    if(item.type==="dir") articles = articles.concat(await listAllArticles(item.path));
+  }
+  return articles;
+}
+
+// Live-Suche
+let allArticles = [];
+async function initArticles() {
+  allArticles = await listAllArticles();
 }
 initArticles();
 
-// Live-Suche
-input.addEventListener("input", () => {
+input.addEventListener("input", async () => {
   const q = input.value.toLowerCase();
-  if(allArticles.length === 0){ results.innerHTML="<li>Lade Artikel...</li>"; return; }
+  if(allArticles.length===0){ results.innerHTML="<li>Lade Artikel...</li>"; return; }
 
-  const filtered = allArticles.filter(a => 
-    a.title.toLowerCase().includes(q) || a.snippet.toLowerCase().includes(q)
+  // Filter nach Titel
+  const filtered = allArticles.filter(f => f.toLowerCase().includes(q));
+
+  // Vorschau laden
+  const htmlSnippets = await Promise.all(
+    filtered.map(async f => {
+      const title = f.split("/").pop().replace(".html","");
+      const snippet = await fetchSnippet(f);
+      return `<li><a href="/${f}">${title}</a><span class="snippet">${snippet}</span></li>`;
+    })
   );
 
-  results.innerHTML = filtered.length
-    ? filtered.map(a => `<li><a href="/${a.file}">${a.title}</a><span class="snippet">${a.snippet}</span></li>`).join("")
-    : "<li>Keine Treffer</li>";
+  results.innerHTML = htmlSnippets.length ? htmlSnippets.join("") : "<li>Keine Treffer</li>";
 });
 </script>
 
