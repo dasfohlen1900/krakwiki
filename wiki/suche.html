@@ -26,10 +26,23 @@
 </div>
 
 <script>
-// Beispiel-JSON: hier kommen alle Wiki-Artikel rein
+// JSON-Daten für die Wiki-Artikel
 const data = [
-  { "title": "Kraken", "description": "Weichtiere mit acht Armen", "links": "/wiki/Kraken.html" },
-  { "title": "Deutsche Sprache", "description": "Germanische Sprache", "links": "/wiki/Deutsche_Sprache.html" }
+  { 
+    "title": "Kraken", 
+    "description": "Weichtiere mit acht Armen", 
+    "links": ["/wiki/Kraken.html"] 
+  },
+  { 
+    "title": "Deutsche Sprache", 
+    "description": "Germanische Sprache", 
+    "links": ["/wiki/Deutsche_Sprache.html"] 
+  },
+  { 
+    "title": "Fonts im Wiki",
+    "description": "Informationen zu den Fonts, die im KrakWiki benutzt werden",
+    "links": ["/wiki/Schriftart.html"]
+  }
 ];
 
 // Funktion: Suchbegriff aus URL
