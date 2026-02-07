@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>KrakWiki24 – Suche</title>
+
+<style>
+/* Fonts */
+h1, h2 { font-family: "Aeropus Serif", "Times New Roman", serif; }
+body, p, li, a, input { font-family: "Aeropus Sans", system-ui, sans-serif; }
+
+/* Layout */
+body { margin: 0; background: #f8f9fa; }
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 20px; border-bottom: 1px solid #ccc; background: white;
+}
+.logo a { font-size: 22px; font-weight: 700; text-decoration: none; color: black; }
+.searchbox { flex: 1; }
+.searchbox input {
+  max-width: 460px; width: 100%; padding: 7px 10px; border: 1px solid #aaa; border-radius: 4px;
+}
+
+/* Main */
+.main { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+.results { list-style: none; padding-left: 0; }
+.results li { padding: 6px 0; }
+.results a { text-decoration: none; color: #0066cc; }
+.results a:hover { text-decoration: underline; }
+
+.footer { text-align: center; padding: 20px; color: #666; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">
+    <a href="/wiki/startseite/index.html">KrakWiki24</a>
+  </div>
+
+  <form class="searchbox" onsubmit="return false;">
+    <input type="search" id="searchInput" placeholder="Suche im Wiki">
+  </form>
+</header>
+
+<main class="main">
+  <h1>Suchergebnisse</h1>
+  <ul id="results" class="results"></ul>
+</main>
+
+<div class="footer">
+  © 2026 KrakWiki24
+</div>
+
+<script>
+// Statische Artikelliste
+const articles = [
+  { title: "Kraken", file: "Kraken.html" },
+  { title: "Tastatur", file: "Tastatur.html" },
+  // später weitere Artikel hier hinzufügen
+];
+
+const input = document.getElementById("searchInput");
+const results = document.getElementById("results");
+
+// Live-Suche
+input.addEventListener("input", () => {
+  const q = input.value.toLowerCase();
+  const matches = articles.filter(a => a.title.toLowerCase().includes(q));
+  results.innerHTML = matches.length
+    ? matches.map(a => `<li><a href="/wiki/${a.file}">${a.title}</a></li>`).join("")
+    : "<li>Keine Treffer</li>";
+});
+
+// Optional: Suchfeld beim Laden fokussieren
+input.focus();
+</script>
+
+</body>
+</html>
